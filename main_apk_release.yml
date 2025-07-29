@@ -1,0 +1,37 @@
+name: Flutter APK Build
+
+on:
+  push:
+    branches:
+      - main # O workflow será acionado em cada push para a branch 'main'
+  pull_request:
+    branches:
+      - main # Opcional: Aciona em pull requests para 'main'
+
+jobs:
+  build_apk:
+    name: Build Flutter APK
+    runs-on: ubuntu-latest # Usa a máquina virtual Ubuntu mais recente do GitHub
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4 # Clona seu repositório
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2 # Ação para configurar o Flutter SDK
+        with:
+          flutter-version: '3.x.x' # Substitua pela versão do Flutter que seu projeto usa (ex: 3.22.x, 3.19.x)
+          channel: 'stable'
+
+      - name: Get Flutter Dependencies
+        run: flutter pub get # Instala as dependências Dart/Flutter
+
+      - name: Build Android APK
+        run: flutter build apk --release # Compila o APK em modo release
+        # O APK será gerado em build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4 # Faz upload do APK como um artefato
+        with:
+          name: app-release-apk # Nome do artefato
+          path: build/app/outputs/flutter-apk/app-release.apk # Caminho do APK
