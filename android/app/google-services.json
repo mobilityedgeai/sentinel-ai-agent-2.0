@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "905980393923",
+    "firebase_url": "https://sentinel-ai-769c5-default-rtdb.firebaseio.com",
+    "project_id": "sentinel-ai-769c5",
+    "storage_bucket": "sentinel-ai-769c5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:905980393923:android:6cc2ee2a373a8b70aa2576",
+        "android_client_info": {
+          "package_name": "com.mycompany.sentinelinsights"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "905980393923-fbrme5qm50udqpfrc85hibh730mu0ai9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvlVKJ4KjR2pUJ6CR8c5vLHZNa9AgzcyY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "905980393923-fbrme5qm50udqpfrc85hibh730mu0ai9.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "905980393923-c2b6ujfneoh4j40nau4rjr220hcq5a8r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mycompany.sentinelinsights"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

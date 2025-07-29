@@ -1,0 +1,381 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+/// Serviço especializado em manter o Sentinel AI funcionando continuamente
+/// Implementa múltiplas estratégias anti-kill baseadas no fabricante do dispositivo
+class AntiKillService {
+  static const MethodChannel _channel = MethodChannel('com.mycompany.sentinelinsights/anti_kill');
+  
+  // Singleton pattern
+  static final AntiKillService _instance = AntiKillService._internal();
+  factory AntiKillService() => _instance;
+  AntiKillService._internal();
+
+  // Estado do serviço
+  bool _isInitialized = false;
+  String _deviceManufacturer = '';
+  String _deviceModel = '';
+  int _androidVersion = 0;
+  Timer? _keepAliveTimer;
+  Timer? _heartbeatTimer;
+
+  // Estratégias por fabricante
+  final Map<String, List<String>> _manufacturerStrategies = {
+    'huawei': ['wakelock_workaround', 'protected_apps', 'startup_manager', 'powergenie_detection'],
+    'xiaomi': ['app_pinning', 'autostart_permission', 'miui_optimization', 'boost_speed'],
+    'oneplus': ['app_locking', 'battery_optimization', 'enhanced_optimization'],
+    'samsung': ['adaptive_battery', 'sleeping_apps', 'device_care', 'good_guardians'],
+    'meizu': ['protected_apps', 'power_plan', 'background_processes'],
+    'asus': ['background_check', 'mobile_manager', 'battery_usage'],
+    'oppo': ['phone_manager', 'battery_optimization', 'startup_manager'],
+    'vivo': ['background_app_refresh', 'battery_optimization', 'startup_manager'],
+  };
+
+  /// Inicializa o serviço anti-kill
+  Future<bool> initialize() async {
+    if (_isInitialized) return true;
+
+    try {
+      // Detectar informações do dispositivo
+      await _detectDeviceInfo();
+      
+      // Configurar estratégias baseadas no fabricante
+      await _setupManufacturerSpecificStrategies();
+      
+      // Inicializar foreground service nativo
+      await _initializeForegroundService();
+      
+      // Configurar wake locks inteligentes
+      await _setupIntelligentWakeLocks();
+      
+      // Iniciar monitoramento contínuo
+      _startContinuousMonitoring();
+      
+      // Configurar heartbeat para detecção de morte
+      _startHeartbeatMonitoring();
+      
+      _isInitialized = true;
+      print('🛡️ AntiKillService inicializado com sucesso para $_deviceManufacturer $_deviceModel');
+      
+      return true;
+    } catch (e) {
+      print('❌ Erro ao inicializar AntiKillService: $e');
+      return false;
+    }
+  }
+
+  /// Detecta informações do dispositivo
+  Future<void> _detectDeviceInfo() async {
+    final deviceInfo = DeviceInfoPlugin();
+    
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      _deviceManufacturer = androidInfo.manufacturer.toLowerCase();
+      _deviceModel = androidInfo.model;
+      _androidVersion = androidInfo.version.sdkInt;
+      
+      print('📱 Dispositivo detectado: $_deviceManufacturer $_deviceModel (Android $_androidVersion)');
+    }
+  }
+
+  /// Configura estratégias específicas por fabricante
+  Future<void> _setupManufacturerSpecificStrategies() async {
+    final strategies = _manufacturerStrategies[_deviceManufacturer] ?? ['generic'];
+    
+    for (final strategy in strategies) {
+      await _implementStrategy(strategy);
+    }
+  }
+
+  /// Implementa estratégia específica
+  Future<void> _implementStrategy(String strategy) async {
+    try {
+      switch (strategy) {
+        case 'wakelock_workaround':
+          await _implementHuaweiWakelockWorkaround();
+          break;
+        case 'protected_apps':
+          await _requestProtectedAppsWhitelist();
+          break;
+        case 'startup_manager':
+          await _requestStartupManagerPermission();
+          break;
+        case 'powergenie_detection':
+          await _detectAndHandlePowerGenie();
+          break;
+        case 'app_pinning':
+          await _requestAppPinning();
+          break;
+        case 'autostart_permission':
+          await _requestMIUIAutostartPermission();
+          break;
+        case 'miui_optimization':
+          await _handleMIUIOptimization();
+          break;
+        case 'app_locking':
+          await _requestOnePlusAppLocking();
+          break;
+        case 'battery_optimization':
+          await _requestBatteryOptimizationExemption();
+          break;
+        case 'enhanced_optimization':
+          await _handleOnePlusEnhancedOptimization();
+          break;
+        case 'adaptive_battery':
+          await _handleSamsungAdaptiveBattery();
+          break;
+        case 'sleeping_apps':
+          await _requestSamsungSleepingAppsExemption();
+          break;
+        case 'device_care':
+          await _handleSamsungDeviceCare();
+          break;
+        case 'background_check':
+          await _handleAsusBackgroundCheck();
+          break;
+        case 'mobile_manager':
+          await _handleAsusMobileManager();
+          break;
+        default:
+          await _implementGenericStrategy();
+      }
+      
+      print('✅ Estratégia implementada: $strategy');
+    } catch (e) {
+      print('⚠️ Erro ao implementar estratégia $strategy: $e');
+    }
+  }
+
+  /// Workaround específico para Huawei EMUI 4 (HwPFWService)
+  Future<void> _implementHuaweiWakelockWorkaround() async {
+    if (_deviceManufacturer == 'huawei' && _androidVersion == 23) {
+      // Usar tag whitelisted para evitar morte pelo HwPFWService
+      await _channel.invokeMethod('setHuaweiWakelockTag', {
+        'tag': 'LocationManagerService'
+      });
+    }
+  }
+
+  /// Solicita adição à lista de apps protegidos
+  Future<void> _requestProtectedAppsWhitelist() async {
+    await _channel.invokeMethod('requestProtectedAppsWhitelist');
+  }
+
+  /// Solicita permissão no startup manager
+  Future<void> _requestStartupManagerPermission() async {
+    await _channel.invokeMethod('requestStartupManagerPermission');
+  }
+
+  /// Detecta e lida com PowerGenie da Huawei
+  Future<void> _detectAndHandlePowerGenie() async {
+    final hasPowerGenie = await _channel.invokeMethod('detectPowerGenie');
+    if (hasPowerGenie == true) {
+      print('⚠️ PowerGenie detectado - orientando usuário para desinstalação');
+      await _showPowerGenieWarning();
+    }
+  }
+
+  /// Solicita pinning do app na MIUI
+  Future<void> _requestAppPinning() async {
+    await _channel.invokeMethod('requestMIUIAppPinning');
+  }
+
+  /// Solicita permissão de autostart na MIUI
+  Future<void> _requestMIUIAutostartPermission() async {
+    final autostartStatus = await _channel.invokeMethod('checkMIUIAutostartStatus');
+    if (autostartStatus == 'DISABLED') {
+      await _channel.invokeMethod('requestMIUIAutostartPermission');
+    }
+  }
+
+  /// Lida com otimizações da MIUI
+  Future<void> _handleMIUIOptimization() async {
+    await _channel.invokeMethod('handleMIUIOptimization');
+  }
+
+  /// Solicita travamento do app no OnePlus
+  Future<void> _requestOnePlusAppLocking() async {
+    await _channel.invokeMethod('requestOnePlusAppLocking');
+  }
+
+  /// Solicita isenção de otimização de bateria
+  Future<void> _requestBatteryOptimizationExemption() async {
+    final permission = await Permission.ignoreBatteryOptimizations.status;
+    if (!permission.isGranted) {
+      await Permission.ignoreBatteryOptimizations.request();
+    }
+  }
+
+  /// Lida com otimização avançada do OnePlus
+  Future<void> _handleOnePlusEnhancedOptimization() async {
+    await _channel.invokeMethod('handleOnePlusEnhancedOptimization');
+  }
+
+  /// Lida com bateria adaptativa da Samsung
+  Future<void> _handleSamsungAdaptiveBattery() async {
+    await _channel.invokeMethod('handleSamsungAdaptiveBattery');
+  }
+
+  /// Solicita isenção de sleeping apps da Samsung
+  Future<void> _requestSamsungSleepingAppsExemption() async {
+    await _channel.invokeMethod('requestSamsungSleepingAppsExemption');
+  }
+
+  /// Lida com Device Care da Samsung
+  Future<void> _handleSamsungDeviceCare() async {
+    await _channel.invokeMethod('handleSamsungDeviceCare');
+  }
+
+  /// Lida com Background Check da Asus
+  Future<void> _handleAsusBackgroundCheck() async {
+    await _channel.invokeMethod('handleAsusBackgroundCheck');
+  }
+
+  /// Lida com Mobile Manager da Asus
+  Future<void> _handleAsusMobileManager() async {
+    await _channel.invokeMethod('handleAsusMobileManager');
+  }
+
+  /// Implementa estratégia genérica
+  Future<void> _implementGenericStrategy() async {
+    await _requestBatteryOptimizationExemption();
+    await _channel.invokeMethod('setupGenericAntiKill');
+  }
+
+  /// Inicializa foreground service nativo
+  Future<void> _initializeForegroundService() async {
+    await _channel.invokeMethod('startAntiKillForegroundService', {
+      'title': 'Sentinel AI - Proteção Ativa',
+      'content': 'Sistema anti-kill mantendo app funcionando continuamente',
+      'importance': 'high'
+    });
+  }
+
+  /// Configura wake locks inteligentes
+  Future<void> _setupIntelligentWakeLocks() async {
+    await _channel.invokeMethod('setupIntelligentWakeLocks', {
+      'manufacturer': _deviceManufacturer,
+      'androidVersion': _androidVersion
+    });
+  }
+
+  /// Inicia monitoramento contínuo
+  void _startContinuousMonitoring() {
+    _keepAliveTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
+      await _performKeepAliveCheck();
+    });
+  }
+
+  /// Inicia monitoramento de heartbeat
+  void _startHeartbeatMonitoring() {
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      await _sendHeartbeat();
+    });
+  }
+
+  /// Executa verificação de keep-alive
+  Future<void> _performKeepAliveCheck() async {
+    try {
+      // Verificar se foreground service está ativo
+      final isServiceActive = await _channel.invokeMethod('isAntiKillServiceActive');
+      if (isServiceActive != true) {
+        print('⚠️ Foreground service inativo - reiniciando...');
+        await _initializeForegroundService();
+      }
+
+      // Verificar wake locks
+      final areWakeLocksActive = await _channel.invokeMethod('areWakeLocksActive');
+      if (areWakeLocksActive != true) {
+        print('⚠️ Wake locks inativos - reativando...');
+        await _setupIntelligentWakeLocks();
+      }
+
+      // Verificar permissões críticas
+      await _checkCriticalPermissions();
+
+      print('✅ Keep-alive check completado');
+    } catch (e) {
+      print('❌ Erro no keep-alive check: $e');
+    }
+  }
+
+  /// Envia heartbeat para detecção de morte
+  Future<void> _sendHeartbeat() async {
+    try {
+      await _channel.invokeMethod('sendHeartbeat', {
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'manufacturer': _deviceManufacturer
+      });
+    } catch (e) {
+      print('❌ Erro ao enviar heartbeat: $e');
+    }
+  }
+
+  /// Verifica permissões críticas
+  Future<void> _checkCriticalPermissions() async {
+    final permissions = [
+      Permission.location,
+      Permission.locationAlways,
+      Permission.ignoreBatteryOptimizations,
+    ];
+
+    for (final permission in permissions) {
+      final status = await permission.status;
+      if (!status.isGranted) {
+        print('⚠️ Permissão crítica perdida: $permission');
+        // Tentar reobter permissão
+        await permission.request();
+      }
+    }
+  }
+
+  /// Mostra aviso sobre PowerGenie
+  Future<void> _showPowerGenieWarning() async {
+    // Esta função seria implementada na UI para mostrar instruções
+    // sobre como desinstalar o PowerGenie via ADB
+    print('⚠️ PowerGenie detectado - usuário deve desinstalar via ADB');
+  }
+
+  /// Para o serviço anti-kill
+  Future<void> stop() async {
+    _keepAliveTimer?.cancel();
+    _heartbeatTimer?.cancel();
+    
+    await _channel.invokeMethod('stopAntiKillService');
+    
+    _isInitialized = false;
+    print('🛡️ AntiKillService parado');
+  }
+
+  /// Obtém estatísticas do serviço
+  Future<Map<String, dynamic>> getStats() async {
+    if (!_isInitialized) return {};
+
+    try {
+      final stats = await _channel.invokeMethod('getAntiKillStats');
+      return Map<String, dynamic>.from(stats ?? {});
+    } catch (e) {
+      print('❌ Erro ao obter estatísticas: $e');
+      return {};
+    }
+  }
+
+  /// Força reinicialização completa
+  Future<void> forceReinitialize() async {
+    print('🔄 Forçando reinicialização do AntiKillService...');
+    
+    await stop();
+    await Future.delayed(const Duration(seconds: 2));
+    await initialize();
+  }
+
+  // Getters
+  bool get isInitialized => _isInitialized;
+  String get deviceManufacturer => _deviceManufacturer;
+  String get deviceModel => _deviceModel;
+  int get androidVersion => _androidVersion;
+}
+
