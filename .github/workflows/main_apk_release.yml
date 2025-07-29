@@ -20,7 +20,10 @@ jobs:
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2 # Ação para configurar o Flutter SDK
         with:
-          flutter-version: '3.x.x' # Substitua pela versão do Flutter que seu projeto usa (ex: 3.22.x, 3.19.x)
+          # Versão do Flutter compatível com Dart SDK ^3.2.0.
+          # Use a versão exata que você usa localmente (ex: '3.16.9', '3.19.6', '3.22.0').
+          # O erro 'Unable to determine Flutter version' ocorre se a versão não for específica.
+          flutter-version: '3.16.9' # Corrigido para uma versão específica
           channel: 'stable'
 
       - name: Get Flutter Dependencies
